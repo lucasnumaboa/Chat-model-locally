@@ -1,0 +1,16 @@
+chatgpt-local-context/
+│
+├── app.log
+├── your-moddel.gguf
+├── static
+│   └── 1style.css
+├── templates
+│   └── index.html
+├── c:/temp/
+│   ├── document1.txt
+│   ├── document2.pdf
+│   └── document3.docx
+├── requirements.txt
+├── seu_script.py
+├── README.md
+└── .gitignore
