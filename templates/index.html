@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat com IA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #chat-container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 900px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-window {
+            background-color: #f0f0f0;
+            height: 600px;
+            border-radius: 5px;
+            overflow-y: scroll;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+
+        #chat-window p {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        #chat-window .user-message {
+            background-color: #0084ff;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        #chat-window .bot-message {
+            background-color: #e0e0e0;
+            color: #333;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
+        #chat-form {
+            display: flex;
+        }
+
+        #user-message {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #0084ff;
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #006bbf;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <h1>Chat com IA</h1>
+        <div id="chat-window"></div>
+
+        <form id="chat-form">
+            <input type="text" id="user-message" placeholder="Escreva sua mensagem..." autofocus>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        var currentBotMessage = ''; // Variável para armazenar a resposta concatenada da IA
+
+        // Função para garantir que as mensagens sejam exibidas corretamente
+        function cleanMessage(message) {
+            return message.replace(/\n/g, ' ').replace(/\s\s+/g, ' ').trim();
+        }
+		
+		
+        // Evento para resetar a variável currentBotMessage quando uma nova resposta começa
+        socket.on('response_start', function() {
+            currentBotMessage = ''; // Limpa a variável ao começar uma nova resposta da IA
+        });
+
+           socket.on('response', function(msg) {
+    var chatWindow = document.getElementById('chat-window');
+    var lastMessage = chatWindow.lastChild;
+
+    // Adiciona a parte recebida da resposta ao conteúdo existente
+    currentBotMessage += msg.data;
+
+    // Substitui \n* por quebra dupla de linha e \n por quebra de linha
+    currentBotMessage = currentBotMessage.replace(/\n\*/g, '<br><br>*'); 
+    currentBotMessage = currentBotMessage.replace(/\n/g, '<br>'); 
+
+    // Substitui BR por quebra de linha HTML
+    currentBotMessage = currentBotMessage.replace(/BR/g, '<br>');
+
+    // Substitui "Iniciando resposta..." pela string desejada
+    currentBotMessage = currentBotMessage.replace("Iniciando resposta...", "");
+    currentBotMessage = currentBotMessage.replace("<br><strong>Resposta finalizada</strong><br>", "");
+
+    // Atualiza a última mensagem na tela com o conteúdo concatenado
+    if (lastMessage && lastMessage.classList.contains('bot-message')) {
+        lastMessage.innerHTML = currentBotMessage;
+    } else {
+        // Cria um novo parágrafo para a resposta da IA, se não existir
+        var newMessage = document.createElement('p');
+        newMessage.classList.add('bot-message');
+        newMessage.innerHTML = currentBotMessage;
+        chatWindow.appendChild(newMessage);
+    }
+
+    // Sempre rola a janela para a última mensagem
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+});
+
+
+
+        // Envia a mensagem do usuário e exibe no chat
+        document.getElementById('chat-form').onsubmit = function(e) {
+            e.preventDefault();
+            var userMessage = document.getElementById('user-message').value;
+            var chatWindow = document.getElementById('chat-window');
+
+            // Exibe a mensagem do usuário
+            var newMessage = document.createElement('p');
+            newMessage.textContent = cleanMessage(userMessage);
+            newMessage.classList.add('user-message');
+            chatWindow.appendChild(newMessage);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Envia a mensagem ao servidor
+			currentBotMessage = "";
+            socket.emit('send_message', userMessage);
+
+            // Limpa o campo de entrada
+            document.getElementById('user-message').value = '';
+        };
+    </script>
+</body>
+</html>
